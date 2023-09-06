@@ -9,11 +9,12 @@ import (
 )
 
 type usuario struct {
-	ID    uint32 `json:"id"`
-	Nome  string `json:"nome"`
-	Nick  string `json.nick`
-	Email string `json:"email"`
-	Senha string `json:"senha"`
+	ID       uint32 `json:"id"`
+	Nome     string `json:"nome"`
+	Nick     string `json:"nick"`
+	Email    string `json:"email"`
+	Senha    string `json:"senha"`
+	CriadoEm string `json:"criadoEm"`
 }
 
 //CriarUsuario
@@ -57,4 +58,43 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(fmt.Sprintf("Usuário inserido com sucesso! Id: %d", idInserido)))
+}
+
+//BuscarUsuarios
+func BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
+	db, erro := banco.Conectar()
+	if erro != nil {
+		w.Write([]byte("Erro ao conectar com o banco de dados!"))
+	}
+	defer db.Close()
+
+	linhas, erro := db.Query("select * from usuarios")
+	if erro != nil {
+		w.Write([]byte("Erro ao buscar usuários!"))
+	}
+	defer linhas.Close()
+
+	var usuarios []usuario
+	for linhas.Next() {
+		var usuario usuario
+
+		if erro := linhas.Scan(&usuario.ID, &usuario.Nome, &usuario.Nick, &usuario.Email, &usuario.Senha, &usuario.CriadoEm); erro != nil {
+			w.Write([]byte("Erro ao escanear usuários!"))
+			fmt.Printf(erro.Error())
+			return
+		}
+
+		usuarios = append(usuarios, usuario)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if erro := json.NewEncoder(w).Encode(usuarios); erro != nil {
+		w.Write([]byte("Erro ao converter usuários para JSON!"))
+		return
+	}
+}
+
+//BuscarUsuario
+func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
+
 }
